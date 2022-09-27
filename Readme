@@ -1,0 +1,193 @@
+Overview
+In this lab, you will learn how to set up a continuous delivery pipeline with Jenkins on Kubernetes engine. Jenkins is the go-to automation server used by developers who frequently integrate their code in a shared repository. The solution you'll build in this lab will be similar to the following diagram:
+
+In the Cloud Architecture Center, see Jenkins on Kubernetes Engine to learn more about running Jenkins on Kubernetes.
+What you'll learn
+In this lab, you'll complete the following tasks to learn about running Jenkins on Kubernets:
+• Provision a Jenkins application into a Kubernetes Engine Cluster
+• Set up your Jenkins application using Helm Package Manager
+• Explore the features of a Jenkins application
+• Create and exercise a Jenkins pipeline
+Prerequisites
+This is an advanced level lab. Before taking it, you should be comfortable with at least the basics of shell programming, Kubernetes, and Jenkins. Here are some Qwiklabs that can get you up to speed:
+• Introduction to Docker
+• Hello Node Kubernetes
+• Managing Deployments Using Kubernetes Engine
+• Setting up Jenkins on Kubernetes Engine
+Once you are prepared, scroll down to learn more about Kubernetes, Jenkins, and Continuous Delivery.
+What is Kubernetes Engine?
+Kubernetes Engine is Google Cloud's hosted version of Kubernetes - a powerful cluster manager and orchestration system for containers. Kubernetes is an open source project that can run on many different environments—from laptops to high-availability multi-node clusters; from virtual machines to bare metal. As mentioned before, Kubernetes apps are built on containers - these are lightweight applications bundled with all the necessary dependencies and libraries to run them. This underlying structure makes Kubernetes applications highly available, secure, and quick to deploy—an ideal framework for cloud developers.
+What is Jenkins?
+Jenkins is an open-source automation server that lets you flexibly orchestrate your build, test, and deployment pipelines. Jenkins allows developers to iterate quickly on projects without worrying about overhead issues that can stem from continuous delivery.
+What is Continuous Delivery / Continuous Deployment?
+When you need to set up a continuous delivery (CD) pipeline, deploying Jenkins on Kubernetes Engine provides important benefits over a standard VM-based deployment.
+When your build process uses containers, one virtual host can run jobs on multiple operating systems. Kubernetes Engine provides ephemeral build executors—these are only utilized when builds are actively running, which leaves resources for other cluster tasks such as batch processing jobs. Another benefit of ephemeral build executors is speed—they launch in a matter of seconds.
+Kubernetes Engine also comes pre-equipped with Google's global load balancer, which you can use to automate web traffic routing to your instance(s). The load balancer handles SSL termination and utilizes a global IP address that's configured with Google's backbone network—coupled with your web front, this load balancer will always set your users on the fastest possible path to an application instance.
+Now that you've learned a little bit about Kubernetes, Jenkins, and how the two interact in a CD pipeline, it's time to go build one.
+Setup and requirements
+Before you click the Start Lab button
+Read these instructions. Labs are timed and you cannot pause them. The timer, which starts when you click Start Lab, shows how long Google Cloud resources will be made available to you.
+This hands-on lab lets you do the lab activities yourself in a real cloud environment, not in a simulation or demo environment. It does so by giving you new, temporary credentials that you use to sign in and access Google Cloud for the duration of the lab.
+To complete this lab, you need:
+• Access to a standard internet browser (Chrome browser recommended).
+Note: Use an Incognito or private browser window to run this lab. This prevents any conflicts between your personal account and the Student account, which may cause extra charges incurred to your personal account.
+• Time to complete the lab---remember, once you start, you cannot pause a lab.
+Note: If you already have your own personal Google Cloud account or project, do not use it for this lab to avoid extra charges to your account.
+How to start your lab and sign in to the Google Cloud Console
+	1. Click the Start Lab button. If you need to pay for the lab, a pop-up opens for you to select your payment method. On the left is the Lab Details panel with the following:
+		○ The Open Google Console button
+		○ Time remaining
+		○ The temporary credentials that you must use for this lab
+		○ Other information, if needed, to step through this lab
+	2. Click Open Google Console. The lab spins up resources, and then opens another tab that shows the Sign in page.
+Tip: Arrange the tabs in separate windows, side-by-side.
+Note: If you see the Choose an account dialog, click Use Another Account.
+	3. If necessary, copy the Username from the Lab Details panel and paste it into the Sign in dialog. Click Next.
+	4. Copy the Password from the Lab Details panel and paste it into the Welcome dialog. Click Next.
+Important: You must use the credentials from the left panel. Do not use your Google Cloud Skills Boost credentials.Note: Using your own Google Cloud account for this lab may incur extra charges.
+	5. Click through the subsequent pages:
+		○ Accept the terms and conditions.
+		○ Do not add recovery options or two-factor authentication (because this is a temporary account).
+		○ Do not sign up for free trials.
+After a few moments, the Cloud Console opens in this tab.
+Note: You can view the menu with a list of Google Cloud Products and Services by clicking the Navigation menu at the top-left. 
+
+Activate Cloud Shell
+Cloud Shell is a virtual machine that is loaded with development tools. It offers a persistent 5GB home directory and runs on the Google Cloud. Cloud Shell provides command-line access to your Google Cloud resources.
+	1. Click Activate Cloud Shell 
+	
+	 at the top of the Google Cloud console.
+	2. Click Continue.
+It takes a few moments to provision and connect to the environment. When you are connected, you are already authenticated, and the project is set to your PROJECT_ID. The output contains a line that declares the PROJECT_ID for this session:
+Your Cloud Platformproject inthis session issettoYOUR_PROJECT_ID
+gcloud is the command-line tool for Google Cloud. It comes pre-installed on Cloud Shell and supports tab-completion.
+	3. (Optional) You can list the active account name with this command:
+gcloud auth list
+Copied!
+content_copy
+Output:
+ACTIVE: *
+ACCOUNT: student-01-xxxxxxxxxxxx@qwiklabs.net
+To set the active account, run:
+    $ gcloud config set account `ACCOUNT`
+	4. (Optional) You can list the project ID with this command:
+gcloud config list project
+Copied!
+content_copy
+Output:
+[core]
+project = <project_ID>
+Example output:
+[core]
+project = qwiklabs-gcp-44776a13dea667a6
+Note: For full documentation of gcloud, in Google Cloud, refer to the gcloud CLI overview guide.
+Task 1. Download the source code
+To get set up, open a new session in Cloud Shell and run the following command to set your zone us-central1-b :
+gcloud config setcompute/zone us-central1-b
+Copied!
+content_copy
+	2. Then copy the lab's sample code:
+gsutil cp gs://spls/gsp051/continuous-deployment-on-kubernetes.zip .
+Copied!
+content_copy
+unzip continuous-deployment-on-kubernetes.zip
+Copied!
+content_copy
+	3. Now change to the correct directory:
+cd continuous-deployment-on-kubernetes
+Copied!
+content_copy
+Task 2. Provisioning Jenkins
+Creating a Kubernetes cluster
+	1. Now, run the following command to provision a Kubernetes cluster:
+gcloud container clusters create jenkins-cd \
+--num-nodes 2 \
+--machine-type n1-standard-2 \
+--scopes "https://www.googleapis.com/auth/source.read_write,cloud-platform"
+Copied!
+content_copy
+This step can take up to several minutes to complete. The extra scopes enable Jenkins to access Cloud Source Repositories and Google Container Registry.
+Test completed task
+Click Check my progress to verify your performed task. If you have successfully created a Kubernetes cluster, you'll see an assessment score.
+Create a Kubernetes cluster (zone: us-central1-b )
+Check my progress
+	2. Before continuing, confirm that your cluster is running by executing the following command:
+gcloud container clusters list
+Copied!
+content_copy
+	3. Now, get the credentials for your cluster:
+gcloud container clusters get-credentials jenkins-cd
+Copied!
+content_copy
+	4. Kubernetes Engine uses these credentials to access your newly provisioned cluster—confirm that you can connect to it by running the following command:
+kubectl cluster-info
+Copied!
+content_copy
+Task 3. Setup Helm
+In this lab, you will use Helm to install Jenkins from the Charts repository. Helm is a package manager that makes it easy to configure and deploy Kubernetes applications. Once you have Jenkins installed, you'll be able to set up your CI/CD pipeline.
+	1. Add Helm's stable chart repo:
+helm repo add jenkins https://charts.jenkins.io
+Copied!
+content_copy
+	2. Ensure the repo is up to date:
+helm repo update
+Copied!
+content_copy
+Task 4. Configure and Install Jenkins
+When installing Jenkins, a values file can be used as a template to provide values that are necessary for setup.
+You will use a custom values file to automatically configure your Kubernetes Cloud and add the following necessary plugins:
+• Kubernetes:latest
+• Workflow-multibranch:latest
+• Git:latest
+• Configuration-as-code:latest
+• Google-oauth-plugin:latest
+• Google-source-plugin:latest
+• Google-storage-plugin:latest
+This will allow Jenkins to connect to your cluster and your GCP project.
+	1. Use the Helm CLI to deploy the chart with your configuration settings:
+helm install cd jenkins/jenkins -f jenkins/values.yaml --wait
+Copied!
+content_copy
+This command may take a couple minutes to complete.
+Test completed task
+Click Check my progress to verify your performed task. If you have successfully configure a Jenkins chart you will see an assessment score.
+Configure and Install Jenkins
+Check my progress
+	3. Once that command completes ensure the Jenkins pod goes to the Running state and the container is in the READY state:
+kubectl get pods
+Copied!
+content_copy
+Example Output:
+NAMEREADY     STATUS    RESTARTS   AGE
+cd-jenkins-7c786475dd-vbhg41/1Running   01m
+	4. Configure the Jenkins service account to be able to deploy to the cluster:
+kubectl create clusterrolebinding jenkins-deploy --clusterrole=cluster-admin --serviceaccount=default:cd-jenkins
+Copied!
+content_copy
+You should receive the following output:
+clusterrolebinding.rbac.authorization.k8s.io/jenkins-deploy created
+	5. Run the following command to setup port forwarding to the Jenkins UI from the Cloud Shell:
+export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/component=jenkins-master" -l "app.kubernetes.io/instance=cd" -o jsonpath="{.items[0].metadata.name}")
+kubectl port-forward $POD_NAME 8080:8080 >> /dev/null &
+Copied!
+content_copy
+	6. Now, check that the Jenkins Service was created properly:
+kubectl get svc
+Copied!
+content_copy
+Example Output:
+NAMECLUSTER-IP     EXTERNAL-IP   PORT(S)     AGE
+cd-jenkins         10.35.249.678080/TCP    3h
+cd-jenkins-agent   10.35.248.150000/TCP   3h
+kubernetes10.35.240.1443/TCP     9h
+You are using the Kubernetes Plugin so that our builder nodes will be automatically launched as necessary when the Jenkins master requests them. Upon completion of their work, they will automatically be turned down and their resources added back to the clusters resource pool.
+Notice that this service exposes ports 8080 and 50000 for any pods that match the selector. This will expose the Jenkins web UI and builder/agent registration ports within the Kubernetes cluster. Additionally, the jenkins-ui services is exposed using a ClusterIP so that it is not accessible from outside the cluster.
+Task 5. Connect to Jenkins
+	1. The Jenkins chart will automatically create an admin password for you. To retrieve it, run:
+printf $(kubectl get secret cd-jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode);echo
+Copied!
+content_copy
+	2. To get to the Jenkins user interface, click on the Web Preview button in Cloud Shell, then click Preview on port 8080:
+
+	3. You should now be able to log in with username admin and your auto-generated password.
+You now have Jenkins set up in your Kubernetes cluster! Jenkins will drive your automated CI/CD pipelines in the next sections.
